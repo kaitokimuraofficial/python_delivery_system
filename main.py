@@ -2,11 +2,21 @@ import io
 import sys
 
 _INPUT = """\
-1
-iVehD 100 0
-2020-03-04 10:30 set_available Bob 50 0
-2020-03-04 10:31 set_unavailable Bob
-2020-03-04 10:32 order iVehD 5021 30 23
+2
+Lotte 100 200
+Macdn 1000 -200
+2020-03-04 09:30 set_available Bob 50 -10
+2020-03-04 09:33 set_available Jane 830 100
+2020-03-04 10:02 order Lotte 2000 200 100
+2020-03-04 10:10 set_available Kate 2030 100
+2020-03-04 10:11 set_max_delivery_time Kate 10
+2020-03-04 10:22 order Macdn 2000 200 100
+2020-03-04 10:30 set_unavailable Kate
+2020-03-04 10:32 order Lotte 2000 200 100
+2020-03-04 10:40 set_available Kate 900 0
+2020-03-04 10:52 order Lotte 2000 200 100
+2020-03-04 23:59 calculate_sales Lotte 2020-03-04 00:00 2020-03-04 24:00
+2020-03-05 00:00 calculate_wages Kate 2020-03-04 09:00 2020-03-04 12:00
 """
 
 sys.stdin = io.StringIO(_INPUT)
@@ -19,7 +29,6 @@ from deliveryman import Deliveryman
 
 import datetime
 
-DELIVERING  =  0
 AVAILAVLE   =  1
 UNAVAILABLE = -1
 ERROR_NO_DELIVERY_PERSON = "ERROR NO DELIVERY PERSON"
@@ -45,10 +54,8 @@ def main(lines):
     for i in range(restaurant_count+1, ln):
         query = lines[i]
         date, time, order, *other_info = list(map(str, query.split()))
-        year, month, day = util.split_date(date)
-        hour, minute = util.split_time(time)
         # 現在時刻を取得
-        current_datetime = datetime.datetime(year, month, day, hour, minute)
+        current_datetime = util.get_datetime(date, time)
 
         if order == "order":
             res_id, price, *destination = util.split_order_info(other_info)
@@ -56,14 +63,16 @@ def main(lines):
             # レストランIDから該当のレストランを取得
             res = restaurant_table[res_id]
 
-            man_id, dis = find_who_is_best_deliveryman(res, destination, current_datetime)
+            man_id, distance = find_who_is_best_deliveryman(res, destination, current_datetime)
+            minute_needed = distance * 60 / 100000
 
             if man_id == None:
                 print(date, time, ERROR_NO_DELIVERY_PERSON)
 
             else:
-                money = util.calculate_delivery_charge(dis)
-                res._order_list.append([current_datetime, price])
+                money = util.calculate_delivery_charge(distance)
+                res.order_list.append([current_datetime, price-money])
+                deliveryman_table[man_id].delivery_list.append([current_datetime, money, minute_needed])
                 print(date, time, man_id, money)
 
 
@@ -112,15 +121,29 @@ def main(lines):
 
         if order == "calculate_sales":
             res_id, date_from, time_from, date_to, time_to = other_info
-            frm = datetime.datetime(*util.split_date(date_from), *util.split_time(time_from))
-            print(frm)
-            to = datetime.datetime(*util.split_date(date_to), *util.split_time(time_to))
+            # 集計する時刻のスタート
+            frm = util.get_datetime(date_from, time_from)
+            # 集計する時刻の終わり
+            to = util.get_datetime(date_to, time_to)
 
             res = restaurant_table[res_id]
 
             sales = res.calculate_sales(frm, to)
 
             print(date, time, "SALES", sales)
+
+        if order == "calculate_wages":
+            man_id, date_from, time_from, date_to, time_to = other_info
+            # 集計する時刻のスタート
+            frm = util.get_datetime(date_from, time_from)
+            # 集計する時刻の終わり
+            to = util.get_datetime(date_to, time_to)
+
+            man = deliveryman_table[man_id]
+
+            wages = man.calculate_wages(frm, to)
+
+            print(date, time, "WAGeS", wages)
 
 
 
@@ -138,7 +161,13 @@ def find_who_is_best_deliveryman(res, destination, current_datetime):
 
         if temp_man.condition != AVAILAVLE:
             continue
+        
+        if len(temp_man.delivery_list) > 0:
+            last_order = temp_man.delivery_list[-1]
+            available_from = last_order[0] + datetime.timedelta(minutes=last_order[2])
 
+            if available_from > current_datetime:
+                continue
         
         free_for = util.calculate_free_time(temp_man, current_datetime)
         expected_dis = util.calculate_expected_dis(temp_man, res, destination)
