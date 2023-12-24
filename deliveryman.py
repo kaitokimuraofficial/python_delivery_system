@@ -1,4 +1,3 @@
-DELIVERING  =  0
 AVAILAVLE   =  1
 UNAVAILABLE = -1
 
@@ -12,6 +11,7 @@ class Deliveryman():
         self._condition = condition
         self._max_delivery_time = max_delivery_time
         self._date_available_from = date_available_from
+        self._delivery_list = []
     
     @property
     def deliveryman_id(self):
@@ -49,5 +49,20 @@ class Deliveryman():
     def date_available_from(self, date_available_from):
         self._date_available_from = date_available_from
 
+    @property
+    def delivery_list(self):
+        return self._delivery_list
+    
+    @delivery_list.setter
+    def delivery_list(self, delivery):
+        self._delivery_list.append(delivery)
 
-
+    def calculate_wages(self, date_from, date_to):
+        wages = 0
+        
+        for delivery in self._delivery_list:
+            if delivery[0] < date_from or date_to < delivery[0]:
+                continue
+            wages += delivery[1]
+        
+        return wages
