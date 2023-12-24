@@ -13,6 +13,13 @@ class UtilTest(unittest.TestCase):
         hour, minute = util.split_time("10-30")
         self.assertEqual(hour, 10)
         self.assertEqual(minute, 30)
+
+    def test_get_datetime(self):
+        import datetime
+        date1 = util.get_datetime("2020-03-04", "10-30")
+        self.assertEqual(date1, datetime.datetime(2020, 3, 4, 10, 30))
+        date2 = util.get_datetime("2020-03-04", "24-00")
+        self.assertEqual(date2, datetime.datetime(2020, 3, 5, 0, 0))
     
     def test_split_order_info(self):
         res_id, price, destination_x, destination_y = util.split_order_info(["iVehD", "5000", "140", "0"])
@@ -26,8 +33,6 @@ class UtilTest(unittest.TestCase):
         self.assertEqual(deliveryman_id, "Bob")
         self.assertEqual(position_x, 50)
         self.assertEqual(position_y, 0)
-
-
 
 if __name__ == "__main__":
     unittest.main()
