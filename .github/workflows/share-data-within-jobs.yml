@@ -1,7 +1,6 @@
 name: share data within jobs
 on: [push]
-env:
-  myIntegerNumber: ${{ 711 }}
+
 
 jobs:
   example-job:
@@ -24,4 +23,3 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: output-log-file
-        run: cat 
