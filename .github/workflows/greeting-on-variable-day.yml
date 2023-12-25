@@ -1,8 +1,11 @@
 name: Greeting on variable day
 
 on:
-  workflow_dispatch
-
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Name'
+        required: true
 env:
   DAY_OF_WEEK: Monday
 
