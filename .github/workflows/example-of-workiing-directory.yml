@@ -1,5 +1,9 @@
 name: example-of-working-directory
 run-name: ${{ github.actor }} is trying to understand github actions
+
+on:
+  workflow_dispatch:
+
 jobs:
   print-working-directory:
     runs-on: ubuntu-latest
