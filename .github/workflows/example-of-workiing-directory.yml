@@ -1,6 +1,4 @@
 name: example-of-working-directory
-run-name: ${{ github.actor }} is trying to understand github actions
-
 on:
   workflow_dispatch:
 
@@ -19,14 +17,13 @@ jobs:
         run: |
           ls -la
           pwd
-          cd ..
+          cd subdir  # subdirに移動する
           pwd
 
       - name: step2
         run: |
-          pwd
+          pwd  # すでにsubdir内に移動しているため、ここではsubdirのパスが表示されるはずです
   
-jobs:
   example-job:
     runs-on: ubuntu-latest
     steps:
