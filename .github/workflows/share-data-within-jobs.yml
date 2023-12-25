@@ -16,7 +16,7 @@ jobs:
           name: output-log-file
           path: output.log
 
-  example-job:
+  example-job2:
     runs-on: ubuntu-latest
     steps:
       - name: Download a single artifact
