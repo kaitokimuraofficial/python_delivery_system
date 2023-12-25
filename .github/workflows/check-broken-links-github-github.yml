@@ -1,79 +1,72 @@
-name: Check Broken Docs Links in github/github
-
-# **What it does**: This checks for any broken docs.github.com links in github/github
-# **Why we have it**: Make sure all docs in github/github are up to date
-# **Who does it impact**: Docs engineering, people on GitHub
+name: 'Link Checker: All English'
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '20 16 * * 1' # Run every Monday at 16:20 UTC / 8:20 PST
+  push:
+    branches:
+      - main
+
+  pull_request:
 
 permissions:
   contents: read
+  pull-requests: read
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
 
 jobs:
-  check_github_github_links:
-    if: github.repository == 'github/docs-internal'
-    runs-on: ubuntu-latest
-    env:
-      # need to use a token from a user with access to github/github for this step
-      GITHUB_TOKEN: ${{ secrets.DOCS_BOT_PAT_WRITEORG_PROJECT }}
-      REPORT_AUTHOR: docs-bot
-      REPORT_LABEL: github github broken link report
-      REPORT_REPOSITORY: github/docs-content
+  # This line defines a job with the ID `check-links` that is stored within the `jobs` key.
+  check-links:
+
+    runs-on: ${{ fromJSON('["ubuntu-latest", "self-hosted"]')[github.repository == 'github/docs-internal'] }}
+
     steps:
+      # The `uses` key tells the job to retrieve the action named `actions/checkout`. This is an action that checks out your repository and downloads it to the runner, allowing you to run actions against your code (such as testing tools). You must use the checkout action any time your workflow will use the repository's code or you are using an action defined in the repository.
       - name: Checkout
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@v4
+
+      # This step uses the `actions/setup-node` action to install the specified version of the Node.js software package on the runner, which gives you access to the `npm` command.
+      - name: Setup node
+        uses: actions/setup-node@v3
         with:
-          # To prevent issues with cloning early access content later
-          persist-credentials: 'false'
+          node-version: 16.13.x
+          cache: npm
 
-      - uses: ./.github/actions/node-npm-setup
+      # The `run` key tells the job to execute a command on the runner. In this example, `npm ci` is used to install the npm software packages for the project.
+      - name: Install
+        run: npm ci
 
-      - uses: ./.github/actions/get-docs-early-access
+      # This step uses the `trilom/file-changes-action` action to gather all the changed files. This example is pinned to a specific version of the action, using the `a6ca26c14274c33b15e6499323aac178af06ad4b` SHA.
+      # 
+      # In this example, this step creates the file "${{ env.HOME }}/files.json", among others.
+      - name: Gather files changed
+        uses: trilom/file-changes-action@a6ca26c14274c33b15e6499323aac178af06ad4b
         with:
-          token: ${{ secrets.DOCS_BOT_PAT_READPUBLICKEY }}
+          fileOutput: 'json'
 
-      - name: Build server
-        run: npm run build
+      # To help with verification, this step lists the contents of `files.json`. This will be visible in the workflow run's log, and can be useful for debugging.
+      - name: Show files changed
+        run: cat $HOME/files.json
 
-      - name: Start server in the background
-        env:
-          NODE_ENV: production
-          PORT: 4000
-          ENABLED_LANGUAGES: en
+      # This step uses the `run` command to execute a script that is stored in the repository at `script/rendered-content-link-checker.mjs` and passes all the parameters it needs to run.
+      - name: Link check (warnings, changed files)
         run: |
+          ./script/rendered-content-link-checker.mjs \
+            --language en \
+            --max 100 \
+            --check-anchors \
+            --check-images \
+            --verbose \
+            --list $HOME/files.json
 
-          node src/frame/server.js &
-          sleep 5
-          curl --retry-connrefused --retry 3 -I http://localhost:4000/
-
-      - name: Run broken github/github link check
+      # This step also uses `run` command to execute a script that is stored in the repository at `script/rendered-content-link-checker.mjs` and passes a different set of parameters.
+      - name: Link check (critical, all files)
         run: |
-          npm run check-github-github-links -- broken_github_github_links.md
-
-      - name: Get title for issue
-        # If the file 'broken_github_github_links.md' got created,
-        # the hash of it will not be an empty string. That means if found
-        # broken links, we want to create an issue.
-        if: ${{ hashFiles('broken_github_github_links.md') != '' }}
-        id: check
-        run: echo "title=$(head -1 broken_github_github_links.md)" >> $GITHUB_OUTPUT
-
-      - name: Create issue from file
-        if: ${{ hashFiles('broken_github_github_links.md') != '' }}
-        id: github-github-broken-link-report
-        uses: peter-evans/create-issue-from-file@433e51abf769039ee20ba1293a088ca19d573b7f
-        with:
-          token: ${{ env.GITHUB_TOKEN }}
-          title: ${{ steps.check.outputs.title }}
-          content-filepath: ./broken_github_github_links.md
-          repository: ${{ env.REPORT_REPOSITORY }}
-          labels: ${{ env.REPORT_LABEL }}
-
-      - uses: ./.github/actions/slack-alert
-        if: ${{ failure() && github.event_name != 'workflow_dispatch' }}
-        with:
-          slack_channel_id: ${{ secrets.DOCS_ALERTS_SLACK_CHANNEL_ID }}
-          slack_token: ${{ secrets.SLACK_DOCS_BOT_TOKEN }}
+          ./script/rendered-content-link-checker.mjs \
+            --language en \
+            --exit \
+            --verbose \
+            --check-images \
+            --level critical
