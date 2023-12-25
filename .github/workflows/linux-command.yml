@@ -17,9 +17,5 @@ jobs:
         run: ls -la
       - name: show current directory after checkout
         run: pwd
-      - name: cd .github
-        run: cd .github
-      - name: ls -la
-        run: ls -la
       - name: show all branches after checkout
         run: git branch -a
