@@ -1,0 +1,15 @@
+name: send notifications to Discord
+
+on: pull_request
+
+jobs:
+    Send-notifications:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Send notifications of a new pull request
+              uses: appleboy/discord-action@master
+              with:
+                webhook_id: ${{ secrets.WEBHOOK_ID }}
+                webhook_token: ${{ secrets.WEBHOOK_TOKEN }}
+                message: The ${{ github.event_name }} event triggered first step.
