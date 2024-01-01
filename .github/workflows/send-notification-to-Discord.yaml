@@ -7,8 +7,12 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - name: Check out repo's head branch
+              uses: actions/checkout@v2.4.0
+              with:
+                ref: ${{ github.head_ref }} 
             - name: Get commit message
-              run:  echo "Commit_Message=$(git log --pretty=oneline --all --abbrev-commit)" >> $GITHUB_ENV
+              run: echo "Commit_Message=$(git log --pretty=oneline --all --abbrev-commit)" >> $GITHUB_ENV
             - name: Send notifications of a new pull request
               uses: appleboy/discord-action@master
               with:
