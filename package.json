@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/kaitokimuraofficial/python_delivery_system#readme",
   "devDependencies": {
-    "flake8": "0.0.1",
-    "pre-commit": "^1.2.2"
+    "flake8": "0.0.1"
   }
 }
