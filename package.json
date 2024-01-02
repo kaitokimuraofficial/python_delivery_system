@@ -1,0 +1,24 @@
+{
+  "name": "python_delivery_system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "flake8 --show-source ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaitokimuraofficial/python_delivery_system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kaitokimuraofficial/python_delivery_system/issues"
+  },
+  "homepage": "https://github.com/kaitokimuraofficial/python_delivery_system#readme",
+  "devDependencies": {
+    "flake8": "0.0.1",
+    "pre-commit": "^1.2.2"
+  }
+}
